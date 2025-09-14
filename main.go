@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -22,6 +23,7 @@ const RingBufferSize = 5
 const timeGet time.Duration = time.Second * 20
 
 func NewRingIntBuffer() *RingIntBuffer {
+	log.Println("Created new RingBuffer")
 	return &RingIntBuffer{
 		array: make([]int, RingBufferSize),
 		size:  RingBufferSize,
@@ -36,7 +38,7 @@ func (r *RingIntBuffer) Push(el int) {
 
 	end := (r.start + r.count) % r.size
 	r.array[end] = el
-
+	log.Printf("Element %d pushed to RingBuffer\n",el)
 	if r.count == r.size {
 		r.start = (r.start + 1) % r.size
 	} else {
@@ -54,6 +56,7 @@ func (r *RingIntBuffer) Get() []int {
 	output := make([]int, r.count)
 	for i := 0; i < r.count; i++ {
 		output[i] = r.array[(r.start+i)%r.size]
+		log.Printf("Element %d got from RingBuffer\n", r.array[(r.start+i)%r.size])
 	}
 
 	return output
@@ -67,6 +70,7 @@ type Pipeline struct {
 }
 
 func NewPipeline(done <-chan bool, stages ...stageInt) *Pipeline {
+	log.Println("Created new Pipeline")
 	return &Pipeline{
 		stages: stages,
 		done:   done,
@@ -82,6 +86,7 @@ func (p *Pipeline) Run(source <-chan int) <-chan int {
 }
 
 func (p *Pipeline) RunStageInt(stage stageInt, source <-chan int) <-chan int {
+
 	return stage(p.done, source)
 }
 
@@ -117,6 +122,8 @@ func main() {
 		positiveNums := make(chan int)
 		go func() {
 			defer close(positiveNums)
+			defer log.Printf("positiveFilter is ended\n")
+			log.Printf("positiveFilter is started\n")
 			for {
 				select {
 				case <-done:
@@ -143,6 +150,8 @@ func main() {
 
 		go func() {
 			defer close(threeNums)
+			defer log.Printf("threeNumsFilter is ended\n")
+			log.Printf("threeNumsFilter is started\n")
 			for {
 				select {
 				case <-done:
@@ -169,6 +178,8 @@ func main() {
 		buffer := NewRingIntBuffer()
 		go func() {
 			defer close(bufferedNumbers)
+			defer log.Printf("bufferStage is ended\n")
+			log.Printf("bufferStage is started\n")
 
 			for {
 				select {
